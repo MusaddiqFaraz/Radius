@@ -125,24 +125,35 @@ class MainActivity : AppCompatActivity(),HasSupportFragmentInjector {
                     if(previousSelectedPos.containsKey(facPos)) {
                         val prevOptionPos = previousSelectedPos[facPos]
                         prevOptionPos?.let {
-                            if(prevOptionPos != -1 && prevOptionPos != optionPos)
-                                this.facilitiesAndOptions[facPos].options[prevOptionPos].isSelected = !this.facilitiesAndOptions[facPos].options[prevOptionPos].isSelected
+                            if(it != -1 && it != optionPos)
+                                this.facilitiesAndOptions[facPos].options[it].isSelected = !this.facilitiesAndOptions[facPos].options[it].isSelected
                         }
+                        Log.d("MainAct","position facility  $facPos $prevOptionPos")
                     }
+
                     this.facilitiesAndOptions[facPos].options[optionPos].isSelected = !this.facilitiesAndOptions[facPos].options[optionPos].isSelected
                     facilitiesAdapter.notifyItemChanged(facPos)
+                    Log.d("MainAct","position current selected $facPos $optionPos ${facilitiesAndOptions[facPos].options[optionPos]}")
+
                     val isSelected = this.facilitiesAndOptions[facPos].options[optionPos].isSelected
-                    if(isSelected)
+                    if(isSelected) {
                         previousSelectedPos[facPos] = optionPos
-                    else
+                        Log.d("MainAct","position selected previous position inserted")
+                    }
+                    else {
                         previousSelectedPos[facPos] = -1
+                        Log.d("MainAct","position un selected previous position removed")
+                    }
                     val exclusion = Exclusion(it.facilityId,it.optionId,0)
                     val exclusions = exclusionMap[exclusion]
+
                     val fromPos = if(isSelected) facPos+1 else facPos
                     if(exclusions != null && exclusions.isNotEmpty()) {
                         disableFeature(fromPos,exclusions)
+                        Log.d("MainAct","position exclusion $exclusions")
                     } else {
                         deselectAll(fromPos)
+                        Log.d("MainAct","position deselectall previous exclusion")
                     }
                 },{
                     it.printStackTrace()
