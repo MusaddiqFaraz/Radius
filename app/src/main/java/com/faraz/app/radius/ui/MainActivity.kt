@@ -36,8 +36,9 @@ class MainActivity : AppCompatActivity(),HasSupportFragmentInjector {
     private val mainVM by vmProviderForActivity { component.mainVM }
     private lateinit var facilitiesAdapter:KotlinRVAdapter<FacilitiesAndOptions,BaseVH>
     private var facilitiesAndOptions = ArrayList<FacilitiesAndOptions>()
-    private var selectedOptions = HashMap<String,String>()
+
     private var previousSelectedPos = HashMap<Int,Int>()
+    private var previousSelectedIds = HashMap<String,String>()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,17 +48,18 @@ class MainActivity : AppCompatActivity(),HasSupportFragmentInjector {
         getFacilities()
 
         btnFilter.setOnClickListener {
-            Log.d("MainAct","selected options $selectedOptions")
+
         }
     }
 
-    override fun onPause() {
-        super.onPause()
+
+    override fun onDestroy() {
+        super.onDestroy()
         RxBus.unregister(this)
     }
 
     private fun getFacilities() {
-        mainVM.getFacilities().subscribe({
+        mainVM.getFacilities()?.subscribe({
             when(it.type) {
                 TYPE.SUCCESS -> {
                     Toast.makeText(this,"From ${it.source}",Toast.LENGTH_SHORT).show()
@@ -76,12 +78,11 @@ class MainActivity : AppCompatActivity(),HasSupportFragmentInjector {
                         var count =1
                         for (facility in it.facilitiesAndOptions){
                             facility.facility?.let {
-                                selectedOptions[it.facilityId] = ""
                                 previousSelectedPos[count++] = -1
                             }
 
                         }
-                        Log.d("MainAct","hashmap ${exclusionMap}")
+
                         displayFacilities(it.facilitiesAndOptions)
                     }
                 }
@@ -102,8 +103,8 @@ class MainActivity : AppCompatActivity(),HasSupportFragmentInjector {
         facilitiesAdapter = KotlinRVAdapter(this,
                 R.layout.item_facility,
                 { BaseVH(it) }, {
-            holder, item ,position ->
-            holder.bindFacility(item,selectedOptions)
+            holder, item ,_ ->
+            holder.bindFacility(item)
 
         },facilitiesAndOptions.toMutableList())
 
@@ -119,66 +120,79 @@ class MainActivity : AppCompatActivity(),HasSupportFragmentInjector {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
-                    Log.d("MainAct","Click event consumed with $it")
+
+
+
                     val facPos =it.facilityPos
                     val optionPos = it.optionPos
                     if(previousSelectedPos.containsKey(facPos)) {
                         val prevOptionPos = previousSelectedPos[facPos]
+
                         prevOptionPos?.let {
                             if(it != -1 && it != optionPos)
-                                this.facilitiesAndOptions[facPos].options[it].isSelected = !this.facilitiesAndOptions[facPos].options[it].isSelected
+                                this.facilitiesAndOptions[facPos].options[it].isSelected = false
                         }
-                        Log.d("MainAct","position facility  $facPos $prevOptionPos")
+
                     }
+
 
                     this.facilitiesAndOptions[facPos].options[optionPos].isSelected = !this.facilitiesAndOptions[facPos].options[optionPos].isSelected
                     facilitiesAdapter.notifyItemChanged(facPos)
-                    Log.d("MainAct","position current selected $facPos $optionPos ${facilitiesAndOptions[facPos].options[optionPos]}")
+
 
                     val isSelected = this.facilitiesAndOptions[facPos].options[optionPos].isSelected
                     if(isSelected) {
                         previousSelectedPos[facPos] = optionPos
-                        Log.d("MainAct","position selected previous position inserted")
+                        previousSelectedIds[it.facilityId] = it.optionId
                     }
                     else {
                         previousSelectedPos[facPos] = -1
-                        Log.d("MainAct","position un selected previous position removed")
+                        previousSelectedIds[it.facilityId] = ""
                     }
-                    val exclusion = Exclusion(it.facilityId,it.optionId,0)
-                    val exclusions = exclusionMap[exclusion]
+
+                    val keys = previousSelectedIds.keys
+                    for (i in facPos+1 until keys.size)
+                        previousSelectedIds[keys.elementAt(i)] = ""
+
+
+                    val exclusions = ArrayList<Exclusion>()
+                    for (entry in previousSelectedIds){
+
+                        if (entry.value.isNotEmpty()) {
+                            val exclusion = Exclusion(entry.key,entry.value,0)
+
+                            val exclusionValue = exclusionMap[exclusion]
+
+                            if(exclusionValue !=  null && exclusionValue.isNotEmpty())
+                                exclusions.addAll(exclusionValue)
+                        }
+
+                    }
 
                     val fromPos = if(isSelected) facPos+1 else facPos
-                    if(exclusions != null && exclusions.isNotEmpty()) {
-                        disableFeature(fromPos,exclusions)
-                        Log.d("MainAct","position exclusion $exclusions")
-                    } else {
-                        deselectAll(fromPos)
-                        Log.d("MainAct","position deselectall previous exclusion")
-                    }
+                    disableFeature(fromPos,exclusions)
+
                 },{
                     it.printStackTrace()
                 }).registerInBus(this)
     }
 
-    fun deselectAll(fromPos:Int) {
+
+    /*
+    * reset the options from next facilities and disable them if they are included in exclusion
+    * */
+    private fun disableFeature(fromPos: Int, exclusions: List<Exclusion>) {
         for (i in fromPos until facilitiesAndOptions.size ) {
             for (option in facilitiesAndOptions[i].options) {
-                option.disabled = false
+                val exclusion = Exclusion(option.facilityId, option.id, 0)
+                option.disabled = exclusions.contains(exclusion)
                 option.isSelected = false
             }
             facilitiesAdapter.notifyItemChanged(i)
         }
     }
 
-    fun disableFeature(fromPos: Int,exclusions: List<Exclusion>) {
-        for (i in fromPos until facilitiesAndOptions.size ) {
-            for (option in facilitiesAndOptions[i].options) {
-                val exclusion = Exclusion(option.facilityId, option.id, 0)
-                option.disabled = exclusions.contains(exclusion)
-            }
-            facilitiesAdapter.notifyItemChanged(i)
-        }
-    }
+
 
 
 

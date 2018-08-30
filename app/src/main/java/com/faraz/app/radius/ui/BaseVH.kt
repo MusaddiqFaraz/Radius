@@ -23,21 +23,18 @@ import kotlinx.android.synthetic.main.item_options.view.*
 class BaseVH(itemView: View): RecyclerView.ViewHolder(itemView) {
 
     private  var optionsAdapter: KotlinRVAdapter<Option, BaseVH> ? = null
-    fun bindFacility(facility: FacilitiesAndOptions, selectedOptions: HashMap<String,String>) {
+    fun bindFacility(facility: FacilitiesAndOptions) {
 
         with(itemView) {
 
-            /*if (adapterPosition > 0 && selectedOptions["${adapterPosition}"].isNullOrEmpty()) {
-                llFacility.visibility = View.GONE
-                return
-            }*/
 
-            Log.d("BaseVH","option $adapterPosition ${selectedOptions["${adapterPosition}"]}")
+
+
             llFacility.visibility = View.VISIBLE
             tvFacility.text = facility.facility?.name
             rvOptions.layoutManager = GridLayoutManager(context, 3)
 
-//            if (optionsAdapter == null) {
+//
                 optionsAdapter = KotlinRVAdapter(context,
                         R.layout.item_options, { it ->
                     BaseVH(it)
@@ -49,10 +46,6 @@ class BaseVH(itemView: View): RecyclerView.ViewHolder(itemView) {
                 optionsAdapter?.notifyDataSetChanged()
 
 
-//            for (i in 0 until facility.options.size)
-//                if(exclusion.optionId == facility.options[i].facilityId)
-//                    optionsAdapter?.notifyItemChanged(i)
-
 
 
 
@@ -60,20 +53,17 @@ class BaseVH(itemView: View): RecyclerView.ViewHolder(itemView) {
     }
 
 
-    fun detached() {
-        RxBus.unregister(this)
-    }
 
-    fun bindOptions(option: Option,facilityPos:Int) {
+
+    private fun bindOptions(option: Option, facilityPos:Int) {
         with(itemView) {
             tvOption.text = option.name
 
-           val color =  if(option.disabled) {
-                ContextCompat.getColor(context,R.color.disabled)
-            } else if(option.isSelected)
-                ContextCompat.getColor(context,R.color.colorPrimary)
-            else
-                ContextCompat.getColor(context,R.color.gray)
+           val color = when {
+               option.disabled -> ContextCompat.getColor(context,R.color.disabled)
+               option.isSelected -> ContextCompat.getColor(context,R.color.colorPrimary)
+               else -> ContextCompat.getColor(context,R.color.gray)
+           }
             ivOption.setColorFilter(color,PorterDuff.Mode.SRC_ATOP)
 
 

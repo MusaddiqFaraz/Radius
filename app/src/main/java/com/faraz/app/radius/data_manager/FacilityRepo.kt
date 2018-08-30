@@ -33,12 +33,7 @@ class FacilityRepo @Inject constructor(private val radiusDatabase: RadiusDatabas
                      else
                          it.data.facilitiesAndOptions.isNotEmpty() && (currentTime - it.data.facilitiesAndOptions[0].facility!!.createdTime) < ttl
                  }
-                 /*.map {
-                     if(it == null)
-                         Resource(TYPE.ERROR,Source.Database ,"Loading Error",null)
-                     else
-                         Resource(it.type,it.source,it.data)
-                 }*/
+
                  .first(Resource(TYPE.SUCCESS,Source.NETWORK,FacilitiesDbResponse(emptyList(), emptyList())))
                  .toObservable()
                  .observeOn(appRxSchedulers.main)
@@ -47,14 +42,7 @@ class FacilityRepo @Inject constructor(private val radiusDatabase: RadiusDatabas
 
     private fun getFacilitiesFromNetwork():Observable<Resource<FacilitiesDbResponse>> {
         return apiInterface.getFacilities().toObservable()
-                /*.map {
-                    val response = it.body()
-                    if (response != null) {
-                        Resource.Success(response)
-                    } else {
-                        Resource.Error(ERROR_TYPE.UNKNOWN,"Network Error",null)
-                    }
-                }*/
+
                 .doAfterNext{
                     val response = it.body()
                     Log.d("FacilityRepo","exclusions list ${it.body()?.exclusions}")
