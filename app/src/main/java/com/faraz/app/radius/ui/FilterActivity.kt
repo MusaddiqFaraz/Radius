@@ -8,14 +8,12 @@ import com.faraz.app.radius.R
 import com.faraz.app.radius.data_manager.RxBus
 import com.faraz.app.radius.data_manager.RxFilterEvent
 import com.faraz.app.radius.data_manager.api.Option
+import com.faraz.app.radius.data_manager.registerInBus
 import com.faraz.app.radius.extensions.KotlinRVAdapter
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_filter.*
 
-/**
- * Created by root on 31/8/18.
- */
 class FilterActivity:AppCompatActivity() {
 
 
@@ -27,20 +25,22 @@ class FilterActivity:AppCompatActivity() {
         setContentView(R.layout.activity_filter)
     }
 
+
     override fun onResume() {
         super.onResume()
         RxBus.observeSticky<RxFilterEvent>()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
+                    RxBus.sendSticky("")
                     options.clear()
                     options.addAll(it.options)
                     Log.d("FilterAct","options ${it.options}")
                     displaySelectedOptions()
-                    RxBus.sendSticky("")
+
                 },{
                     it.printStackTrace()
-                })
+                }).registerInBus(this)
     }
 
     override fun onPause() {
@@ -48,7 +48,7 @@ class FilterActivity:AppCompatActivity() {
         RxBus.unregister(this)
     }
 
-    fun displaySelectedOptions() {
+    private fun displaySelectedOptions() {
         Log.d("FilterAct","options rec $options")
         rvSelectedOptions.layoutManager = LinearLayoutManager(this)
 
@@ -58,6 +58,7 @@ class FilterActivity:AppCompatActivity() {
                     holder, item, position ->
                     holder.bindOptions(item,0,true)
                 },options)
+
 
         rvSelectedOptions.adapter = selectedOptionsAdapter
         selectedOptionsAdapter.notifyDataSetChanged()
