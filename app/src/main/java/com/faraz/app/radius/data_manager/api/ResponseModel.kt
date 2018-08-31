@@ -49,7 +49,8 @@ data class Option(
         var facilityId: String = "",
         var createdTime:Long= 0,
         @Ignore var isSelected:Boolean= false,
-        @Ignore var disabled: Boolean = false
+        @Ignore var disabled: Boolean = false,
+        @Ignore var facilityName:String = ""
 )
 
 @Entity(foreignKeys = [

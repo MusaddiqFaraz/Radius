@@ -55,8 +55,17 @@ class BaseVH(itemView: View): RecyclerView.ViewHolder(itemView) {
 
 
 
-    private fun bindOptions(option: Option, facilityPos:Int) {
+     fun bindOptions(option: Option, facilityPos:Int,showFacility:Boolean = false) {
         with(itemView) {
+
+            //only to show selected facility with options after user is done selecting options
+            if(showFacility) {
+                tvSelectedFacility.visibility = View.VISIBLE
+                tvSelectedFacility.text = "Selected: ${option.facilityName}"
+
+            }
+
+
             tvOption.text = option.name
 
            val color = when {
@@ -73,7 +82,7 @@ class BaseVH(itemView: View): RecyclerView.ViewHolder(itemView) {
             val id = context.resources.getIdentifier(name+"2x","drawable",context.packageName)
             ivOption.setImageResource(id)
             llOption.setOnClickListener {
-                if(!option.disabled) {
+                if(!option.disabled && !showFacility) {
                     RxBus.sendSticky(RxClickEvent(facilityPos,adapterPosition,option.facilityId,option.id))
                 }
 

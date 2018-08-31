@@ -1,5 +1,6 @@
 package com.faraz.app.radius.ui
 
+import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v4.app.Fragment
@@ -8,11 +9,8 @@ import android.util.Log
 import android.widget.Toast
 import com.faraz.app.radius.R
 import com.faraz.app.radius.component
-import com.faraz.app.radius.data_manager.AppRxSchedulers
-import com.faraz.app.radius.data_manager.RxBus
-import com.faraz.app.radius.data_manager.RxClickEvent
+import com.faraz.app.radius.data_manager.*
 import com.faraz.app.radius.data_manager.api.*
-import com.faraz.app.radius.data_manager.registerInBus
 import com.faraz.app.radius.extensions.KotlinRVAdapter
 import com.faraz.app.radius.extensions.vmProviderForActivity
 import dagger.android.AndroidInjector
@@ -48,7 +46,19 @@ class MainActivity : AppCompatActivity(),HasSupportFragmentInjector {
         getFacilities()
 
         btnFilter.setOnClickListener {
+            val selOptions = ArrayList<Option>()
+            for (entry in previousSelectedPos){
+                if(entry.value != -1) {
+                    val option = facilitiesAndOptions[entry.key].options[entry.value]
+                    option.facilityName = facilitiesAndOptions[entry.key].facility?.name ?: ""
+                    selOptions.add(option)
+                }
+            }
 
+            if(selOptions.isNotEmpty() && selOptions.size == facilitiesAndOptions.size) {
+                RxBus.sendSticky(RxFilterEvent(selOptions))
+                startActivity(Intent(this, FilterActivity::class.java))
+            }
         }
     }
 
@@ -121,8 +131,6 @@ class MainActivity : AppCompatActivity(),HasSupportFragmentInjector {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
 
-
-
                     val facPos =it.facilityPos
                     val optionPos = it.optionPos
                     if(previousSelectedPos.containsKey(facPos)) {
@@ -171,6 +179,7 @@ class MainActivity : AppCompatActivity(),HasSupportFragmentInjector {
 
                     val fromPos = if(isSelected) facPos+1 else facPos
                     disableFeature(fromPos,exclusions)
+                    RxBus.sendSticky("")
 
                 },{
                     it.printStackTrace()
